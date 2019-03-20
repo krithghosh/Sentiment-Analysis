@@ -21,8 +21,11 @@ object SentimentAnalysis {
     // Removing punctuations
     val parsedPunctuations = parsedLinks.map(x => x.replaceAll(Utility.REG_PUNCTUATIONS, ""))
 
+    val parsedContractions = parsedPunctuations.map(x => x.split(" ")
+      .map(y => if (Utility.contractions.contains(y)) Utility.contractions(y) else y).mkString(" "))
+
     // Removing extra whitespaces
-    val parsedWhitespaces = parsedPunctuations.map(x => x.replaceAll(Utility.REG_WHITESPACES, " "))
+    val parsedWhitespaces = parsedContractions.map(x => x.replaceAll(Utility.REG_WHITESPACES, " "))
 
     // Trimming the string
     val parsedTrim = parsedWhitespaces.map(x => x.replaceAll(Utility.REG_TRIM, ""))
