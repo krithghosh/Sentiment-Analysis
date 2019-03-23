@@ -10,6 +10,7 @@ object SentimentAnalysis {
 
   def main(args: Array[String]): Unit = {
     val context = new SparkContext("local[*]", "SentimentAnalysis")
+    //val context = SparkContext.getOrCreate()
     val lines = context.textFile("src/main/resources/tweets_2009_0.csv")
     val stopwords = context.textFile("src/main/resources/stopwords.txt")
 
@@ -40,8 +41,11 @@ object SentimentAnalysis {
     // Trimming the string
     val parsedTrim = parsedWhitespaces.map(x => x.replaceAll(Utility.REG_TRIM, ""))
 
+    // Removing empty tweets
+    val parsedEmpty = parsedTrim.filter(x => x.length > 0)
+
     var count = 0
-    for (result <- parsedTrim.collect() if count < 5) {
+    for (result <- parsedEmpty.collect() if count < 20) {
       println(result)
       count = count + 1
     }
