@@ -44,7 +44,7 @@ object SentimentAnalysis {
     val parsedWhitespaces = parsedStopWords.map(x => x.replaceAll(Utility.REG_WHITESPACES, " "))
 
     // Trimming the string
-    val parsedTrim = parsedWhitespaces.map(x => x.replaceAll(Utility.REG_TRIM, ""))
+    val parsedTrim = parsedWhitespaces.map(x => x.trim())
 
     // Removing empty tweets
     val parsedEmpty = parsedTrim.filter(x => x.length > 0)
