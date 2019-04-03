@@ -34,4 +34,7 @@ object Utility {
     "hes" -> "he is",
     "shes" -> "she is"
   )
+
+  val LABELS = Array("anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise",
+    "trust", "negative", "positive")
 }

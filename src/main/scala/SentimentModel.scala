@@ -1,5 +1,6 @@
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.classification.{LogisticRegression}
+import org.apache.spark.ml.{Pipeline, PipelineStage}
+import org.apache.spark.ml.classification.{LinearSVC, LogisticRegression, NaiveBayes, RandomForestClassifier}
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.feature.{HashingTF, IDF, StandardScaler, Tokenizer}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
@@ -15,9 +16,6 @@ object SentimentModel {
     var df = spark.read.format("csv").option("header", "true").
       load("src/main/resources/data2.csv")
 
-    val labels = Array("anger", "positive", "anticipation", "disgust", "fear", "joy", "sadness", "surprise",
-      "trust", "negative")
-
     val tokenizer = new Tokenizer().setInputCol("tweet").setOutputCol("words")
     val hashingTF = new HashingTF().setNumFeatures(1000).setInputCol("words").setOutputCol("rawFeatures")
     val idf = new IDF().setInputCol("rawFeatures").setOutputCol("features").setMinDocFreq(2)
@@ -27,33 +25,40 @@ object SentimentModel {
       .setWithStd(true)
       .setWithMean(false)
 
-    for (label <- labels) {
+    for (label <- Utility.LABELS) {
       df = df.withColumn(label, when(df(label) =!= 0, 1).when(df(label) === 0, 0))
     }
 
-    val Array(train, test) = df.randomSplit(Array(0.8, 0.2))
+    val Array(trainingData, testData) = df.randomSplit(Array(0.7, 0.3))
+    var stages: Array[PipelineStage] = Array(tokenizer, hashingTF, idf, scaler)
 
-    var stages: Array[_ <: org.apache.spark.ml.PipelineStage] = Array(tokenizer, hashingTF, idf, scaler)
-
-    var count = 0
-    for (label <- labels) {
-      var lr1 = new LogisticRegression()
-        .setLabelCol(label)
-        .setFeaturesCol("scaledFeatures")
-        .setProbabilityCol("prob" + count)
-        .setRawPredictionCol("raw_pred" + count)
-        .setPredictionCol("pred" + count)
+    for (label <- Utility.LABELS) {
+      val clf = new LogisticRegression()
         .setMaxIter(10)
         .setRegParam(0.3)
         .setElasticNetParam(0.8)
+        .setLabelCol(label)
+        .setFeaturesCol("scaledFeatures")
+        .setProbabilityCol(label.concat("_prob"))
+        .setRawPredictionCol(label.concat("_raw_pred"))
+        .setPredictionCol(label.concat("_pred"))
 
-      stages = stages :+ lr1
-      count = count + 1
+      stages = stages :+ clf
     }
 
     val pipeline = new Pipeline().setStages(stages)
-    val model = pipeline.fit(train)
-    val predictions = model.transform(test)
-    print(predictions)
+    val model = pipeline.fit(trainingData)
+    val predictions = model.transform(testData)
+
+    var predicted_results: Array[String] = Array()
+    for (label <- Utility.LABELS) {
+      val evaluator = new MulticlassClassificationEvaluator()
+        .setLabelCol(label)
+        .setPredictionCol(label.concat("_pred"))
+        .setMetricName("accuracy")
+      val accuracy = evaluator.evaluate(predictions) * 100
+      predicted_results = predicted_results :+ label.concat(" accuracy " + accuracy)
+    }
+    predicted_results.foreach(println)
   }
 }
