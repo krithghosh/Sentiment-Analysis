@@ -2,8 +2,9 @@ import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.{LogisticRegression}
 import org.apache.spark.ml.feature.{HashingTF, IDF, StandardScaler, Tokenizer}
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
 
-class SentimentModel {
+object SentimentModel {
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder.
@@ -11,7 +12,7 @@ class SentimentModel {
       .appName("SentimentAnalysis")
       .getOrCreate()
 
-    val df = spark.read.format("csv").option("header", "true").
+    var df = spark.read.format("csv").option("header", "true").
       load("src/main/resources/data2.csv")
 
     val labels = Array("anger", "positive", "anticipation", "disgust", "fear", "joy", "sadness", "surprise",
@@ -27,15 +28,27 @@ class SentimentModel {
       .setWithMean(false)
 
     for (label <- labels) {
-      df = df.withColumn(label, when(df(label) =!= 0, 1).otherwise(df(label)))
+      df = df.withColumn(label, when(df(label) =!= 0, 1).when(df(label) === 0, 0))
     }
 
     val Array(train, test) = df.randomSplit(Array(0.8, 0.2))
 
-    var stages = Array(tokenizer, hashingTF, idf, scaler)
+    var stages: Array[_ <: org.apache.spark.ml.PipelineStage] = Array(tokenizer, hashingTF, idf, scaler)
 
+    var count = 0
     for (label <- labels) {
-      stages :+= new LogisticRegression().setLabelCol(label).setMaxIter(10).setRegParam(0.3).setElasticNetParam(0.8)
+      var lr1 = new LogisticRegression()
+        .setLabelCol(label)
+        .setFeaturesCol("scaledFeatures")
+        .setProbabilityCol("prob" + count)
+        .setRawPredictionCol("raw_pred" + count)
+        .setPredictionCol("pred" + count)
+        .setMaxIter(10)
+        .setRegParam(0.3)
+        .setElasticNetParam(0.8)
+
+      stages = stages :+ lr1
+      count = count + 1
     }
 
     val pipeline = new Pipeline().setStages(stages)
