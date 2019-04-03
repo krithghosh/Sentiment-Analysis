@@ -33,13 +33,11 @@ object SentimentModel {
     var stages: Array[PipelineStage] = Array(tokenizer, hashingTF, idf, scaler)
 
     for (label <- Utility.LABELS) {
-      val clf = new LogisticRegression()
+      val clf = new LinearSVC()
         .setMaxIter(10)
         .setRegParam(0.3)
-        .setElasticNetParam(0.8)
         .setLabelCol(label)
         .setFeaturesCol("scaledFeatures")
-        .setProbabilityCol(label.concat("_prob"))
         .setRawPredictionCol(label.concat("_raw_pred"))
         .setPredictionCol(label.concat("_pred"))
 
@@ -62,3 +60,16 @@ object SentimentModel {
     predicted_results.foreach(println)
   }
 }
+
+/*
+anger accuracy 79.74066458844598
+anticipation accuracy 76.91351064535385
+disgust accuracy 83.95901041321217
+fear accuracy 77.99794388804139
+joy accuracy 78.82536313590236
+sadness accuracy 80.48683425084566
+surprise accuracy 83.90594945944153
+trust accuracy 74.25880480201631
+negative accuracy 72.91238310008622
+positive accuracy 71.49631889633216
+ */
