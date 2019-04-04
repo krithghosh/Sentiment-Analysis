@@ -73,5 +73,6 @@ object SentimentModel {
       println(label.concat(" accuracy " + accuracy))
     }
     predicted_results.foreach(println)
+    spark.stop()
   }
 }
