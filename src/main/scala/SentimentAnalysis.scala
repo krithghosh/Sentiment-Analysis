@@ -3,6 +3,8 @@ import java.io.File
 import org.apache.hadoop.fs.FileUtil
 import org.apache.spark.SparkContext
 
+import scala.util.matching.Regex
+
 object SentimentAnalysis {
 
   def setupLogging() = {
@@ -14,10 +16,12 @@ object SentimentAnalysis {
   def main(args: Array[String]): Unit = {
     val context = new SparkContext("local[*]", "SentimentAnalysis")
     //val context = SparkContext.getOrCreate()
-    val lines = context.textFile("src/main/resources/tweets_2009_0.csv")
+    val lines = context.textFile("src/main/resources/got_new.csv")
     val stopWords = context.textFile("src/main/resources/stopwords.txt")
     val outputFile = "src/main/resources/output.csv"
     FileUtil.fullyDelete(new File(outputFile))
+
+    val pattern = new Regex(Utility.REG_CAMELCASE)
 
     // Removing the @words
     val parsedHash = lines.map(x => x.replaceAll(Utility.REG_HANDLERS, ""))
@@ -28,8 +32,11 @@ object SentimentAnalysis {
     // Removing punctuations
     val parsedPunctuations = parsedLinks.map(x => x.replaceAll(Utility.REG_PUNCTUATIONS, ""))
 
+    // Splitting camelCase
+    val parsedCamelCase = parsedPunctuations.map(x => (pattern findAllIn x).mkString(" "))
+
     // Lowercase
-    val parsedLowercase = parsedPunctuations.map(x => x.toLowerCase)
+    val parsedLowercase = parsedCamelCase.map(x => x.toLowerCase)
 
     // Expanding contractions
     val parsedContractions = parsedLowercase.map(x => x.split(" ")

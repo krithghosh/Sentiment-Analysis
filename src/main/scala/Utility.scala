@@ -4,12 +4,7 @@ object Utility {
   final val REG_PUNCTUATIONS = "[^\\w\\s]"
   final val REG_WHITESPACES = "\\s+"
   final val REG_TRIM = "^[ \\t]+"
-  final val LOCAL_STOPWORDS_URI = ""
-  final val REMOTE_STOPWORDS_URI = ""
-  final val LOCAL_OUTPUT_URI = ""
-  final val REMOTE_OUTPUT_URI = ""
-  final val LOCAL_INPUT_URI = ""
-  final val REMOTE_INPUT_URI = ""
+  final val REG_CAMELCASE = "\"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))\""
 
   val contractions = Map[String, String](
     "aint" -> "am not",
